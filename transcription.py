@@ -1,18 +1,21 @@
-"""Транскрипция аудио через OpenAI Whisper API."""
+"""Транскрипция аудио через Groq API (Whisper, бесплатный тариф)."""
 
 import io
 
-from openai import AsyncOpenAI
+from groq import AsyncGroq
 
 import config
 
-_client: AsyncOpenAI | None = None
+# Быстрая мультиязычная модель Whisper, доступна на бесплатном тарифе Groq.
+WHISPER_MODEL = "whisper-large-v3-turbo"
+
+_client: AsyncGroq | None = None
 
 
-def _get_client() -> AsyncOpenAI:
+def _get_client() -> AsyncGroq:
     global _client
     if _client is None:
-        _client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
+        _client = AsyncGroq(api_key=config.GROQ_API_KEY)
     return _client
 
 
@@ -26,7 +29,7 @@ async def transcribe(audio: bytes, filename: str = "voice.ogg") -> str:
     buffer = io.BytesIO(audio)
     buffer.name = filename
     result = await _get_client().audio.transcriptions.create(
-        model="whisper-1",
+        model=WHISPER_MODEL,
         file=buffer,
     )
     return result.text.strip()

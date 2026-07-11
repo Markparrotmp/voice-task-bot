@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 
 def validate() -> None:
@@ -17,7 +17,7 @@ def validate() -> None:
         name
         for name, value in {
             "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
-            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "GROQ_API_KEY": GROQ_API_KEY,
         }.items()
         if not value
     ]
