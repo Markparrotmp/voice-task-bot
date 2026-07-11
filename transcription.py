@@ -1,35 +1,50 @@
-"""Транскрипция аудио через Groq API (Whisper, бесплатный тариф)."""
+"""Транскрипция аудио локальной моделью Whisper (faster-whisper).
 
+Модель крутится прямо на сервере: без внешних API, лимитов и
+региональных блокировок. Первый запуск скачивает модель с Hugging Face
+(~150–500 МБ в зависимости от размера).
+"""
+
+import asyncio
 import io
 
-from groq import AsyncGroq
+from faster_whisper import WhisperModel
 
 import config
 
-# Быстрая мультиязычная модель Whisper, доступна на бесплатном тарифе Groq.
-WHISPER_MODEL = "whisper-large-v3-turbo"
-
-_client: AsyncGroq | None = None
+_model: WhisperModel | None = None
 
 
-def _get_client() -> AsyncGroq:
-    global _client
-    if _client is None:
-        _client = AsyncGroq(api_key=config.GROQ_API_KEY)
-    return _client
+def _get_model() -> WhisperModel:
+    global _model
+    if _model is None:
+        _model = WhisperModel(
+            config.WHISPER_MODEL,
+            device="cpu",
+            compute_type="int8",
+        )
+    return _model
+
+
+def preload() -> None:
+    """Скачивает и загружает модель заранее, чтобы первое голосовое
+    не ждало несколько минут."""
+    _get_model()
+
+
+def _transcribe_sync(audio: bytes) -> str:
+    segments, _info = _get_model().transcribe(
+        io.BytesIO(audio),
+        vad_filter=True,  # отсекает тишину в начале/конце
+    )
+    return " ".join(segment.text.strip() for segment in segments).strip()
 
 
 async def transcribe(audio: bytes, filename: str = "voice.ogg") -> str:
-    """Принимает байты аудиофайла, возвращает расшифрованный текст.
+    """Принимает байты аудиофайла (OGG/Opus от Telegram — напрямую),
+    возвращает расшифрованный текст.
 
-    Telegram присылает голосовые в формате OGG/Opus — Whisper понимает
-    его напрямую, перекодировка не нужна. Имя файла обязательно: по его
-    расширению API определяет формат.
+    Распознавание — блокирующая CPU-работа, поэтому уводим его в поток,
+    чтобы бот продолжал отвечать на другие сообщения.
     """
-    buffer = io.BytesIO(audio)
-    buffer.name = filename
-    result = await _get_client().audio.transcriptions.create(
-        model=WHISPER_MODEL,
-        file=buffer,
-    )
-    return result.text.strip()
+    return await asyncio.to_thread(_transcribe_sync, audio)

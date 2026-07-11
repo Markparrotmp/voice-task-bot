@@ -8,22 +8,18 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+
+# Размер локальной модели Whisper: tiny / base / small / medium.
+# Чем больше — тем лучше качество (особенно русского), но тем больше
+# оперативки и медленнее расшифровка. base — компромисс для VPS с 1 ГБ RAM,
+# small заметно качественнее, если памяти 2 ГБ и больше.
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
 
 
 def validate() -> None:
     """Падает с понятной ошибкой, если не хватает обязательных переменных."""
-    missing = [
-        name
-        for name, value in {
-            "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
-            "GROQ_API_KEY": GROQ_API_KEY,
-        }.items()
-        if not value
-    ]
-    if missing:
+    if not TELEGRAM_BOT_TOKEN:
         raise SystemExit(
-            "Не заданы переменные окружения: "
-            + ", ".join(missing)
-            + ". Скопируй .env.example в .env и заполни значения."
+            "Не задана переменная окружения TELEGRAM_BOT_TOKEN. "
+            "Скопируй .env.example в .env и заполни значения."
         )

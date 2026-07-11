@@ -35,8 +35,7 @@ if [ -f .env ]; then
     echo "Файл .env уже есть — оставляю как есть."
 else
     read -rp "Вставь токен бота от @BotFather: " BOT_TOKEN
-    read -rp "Вставь ключ Groq (gsk_...): " GROQ_KEY
-    printf 'TELEGRAM_BOT_TOKEN=%s\nGROQ_API_KEY=%s\n' "$BOT_TOKEN" "$GROQ_KEY" > .env
+    printf 'TELEGRAM_BOT_TOKEN=%s\n' "$BOT_TOKEN" > .env
     chmod 600 .env
 fi
 
@@ -45,6 +44,7 @@ cp voicetaskbot.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable voicetaskbot >/dev/null 2>&1
 systemctl restart voicetaskbot
+echo "Первый запуск скачивает модель распознавания (~150 МБ), подожди…"
 sleep 3
 
 if systemctl is-active --quiet voicetaskbot; then
